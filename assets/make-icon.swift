@@ -63,39 +63,22 @@ func render(size: CGFloat) -> CGImage {
     ctx.restoreGState()
 
     // Everything below is positioned in the art box's own 0…824 space.
+    // Two spaces: the one you left, dim; the one you landed on, solid white.
+    // Between them, the slivers the panel left behind on its way over.
     ctx.saveGState()
     ctx.translateBy(x: inset, y: inset)
-    ctx.setLineCap(.round)
-    ctx.setLineJoin(.round)
 
-    // Motion trail: the swipe you already made, still in flight.
-    let streaks: [(y: CGFloat, x0: CGFloat, x1: CGFloat, w: CGFloat, a: CGFloat)] = [
-        (412,  96, 306, 58, 0.95),
-        (300, 156, 292, 46, 0.55),
-        (524, 156, 292, 46, 0.55),
-    ]
-    for s in streaks {
-        ctx.setStrokeColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: s.a))
-        ctx.setLineWidth(s.w)
-        ctx.move(to: CGPoint(x: s.x0, y: s.y))
-        ctx.addLine(to: CGPoint(x: s.x1, y: s.y))
-        ctx.strokePath()
+    func panel(_ x: CGFloat, _ w: CGFloat, _ r: CGFloat, _ alpha: CGFloat) {
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: alpha))
+        ctx.addPath(CGPath(roundedRect: CGRect(x: x, y: 262, width: w, height: 300),
+                           cornerWidth: r, cornerHeight: r, transform: nil))
+        ctx.fillPath()
     }
 
-    // The chevron: where it lands, immediately.
-    ctx.setStrokeColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.5))
-    ctx.setLineWidth(60)
-    ctx.move(to: CGPoint(x: 398, y: 250))
-    ctx.addLine(to: CGPoint(x: 536, y: 412))
-    ctx.addLine(to: CGPoint(x: 398, y: 574))
-    ctx.strokePath()
-
-    ctx.setStrokeColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
-    ctx.setLineWidth(76)
-    ctx.move(to: CGPoint(x: 566, y: 226))
-    ctx.addLine(to: CGPoint(x: 742, y: 412))
-    ctx.addLine(to: CGPoint(x: 566, y: 598))
-    ctx.strokePath()
+    panel(96, 236, 52, 0.30)   // the space you came from
+    panel(392,  38, 19, 0.34)  // trail
+    panel(458,  50, 19, 0.56)  // trail, closer, brighter
+    panel(534, 204, 52, 1.00)  // where you are now, already arrived
 
     ctx.restoreGState()
     return ctx.makeImage()!

@@ -30,7 +30,86 @@ private let fProgress    = field(135)
 private let dockControlEventType: UInt32 = 30   // kCGSEventDockControl
 private let hidTypeDockSwipe: Int64 = 23        // kIOHIDEventTypeDockSwipe
 private let motionHorizontal: Int64 = 1
+private let phaseBegan: Int64 = 1
 private let phaseEnded: Int64 = 4
+
+// MARK: - where we are in the space list
+//
+// Flinging at 999999 past the last space lands the Dock on an index that does
+// not exist, which shows as a black screen. Native rubber-bands instead, so at
+// an edge we simply leave the gesture alone and let it do that.
+//
+// The symbols are resolved by hand: they are private, and if a macOS update
+// removes one we want to fall back to "allow" rather than fail to launch.
+
+private typealias CGSConnection = Int32
+private let cgHandle = dlopen(
+    "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", RTLD_LAZY)
+
+private func cgSymbol<T>(_ name: String, _ type: T.Type) -> T? {
+    guard let h = cgHandle, let p = dlsym(h, name) else { return nil }
+    return unsafeBitCast(p, to: T.self)
+}
+
+private let cgsMainConnectionID =
+    cgSymbol("CGSMainConnectionID", (@convention(c) () -> CGSConnection).self)
+private let cgsCopyManagedDisplaySpaces =
+    cgSymbol("CGSCopyManagedDisplaySpaces", (@convention(c) (CGSConnection) -> CFArray?).self)
+private let cgsCopyActiveMenuBarDisplayIdentifier =
+    cgSymbol("CGSCopyActiveMenuBarDisplayIdentifier", (@convention(c) (CGSConnection) -> CFString?).self)
+
+struct SpacePosition {
+    var index = -1          // -1 = unknown, in which case we allow the flick
+    var count = 0
+    var canGoPrev: Bool { index < 0 || index > 0 }
+    var canGoNext: Bool { index < 0 || index < count - 1 }
+}
+
+/// The swipe applies to the display the pointer is on, which is identified in
+/// the space list by its UUID string.
+private func cursorDisplayIdentifier() -> String? {
+    guard let probe = CGEvent(source: nil) else { return nil }
+    var displayID: CGDirectDisplayID = 0
+    var matched: UInt32 = 0
+    guard CGGetDisplaysWithPoint(probe.location, 1, &displayID, &matched) == .success,
+          matched > 0,
+          let uuid = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue()
+    else { return nil }
+    return CFUUIDCreateString(nil, uuid) as String?
+}
+
+/// One WindowServer round-trip. Called on `began`, so its cost lands at the
+/// start of the gesture where nothing is waiting on it.
+func currentSpacePosition() -> SpacePosition {
+    var pos = SpacePosition()
+    guard let mainID = cgsMainConnectionID, let copySpaces = cgsCopyManagedDisplaySpaces
+    else { return pos }
+    let cid = mainID()
+    guard let displays = copySpaces(cid) as? [[String: Any]], !displays.isEmpty
+    else { return pos }
+
+    func identifier(_ d: [String: Any]) -> String? { d["Display Identifier"] as? String }
+    let wanted = cursorDisplayIdentifier()
+        ?? cgsCopyActiveMenuBarDisplayIdentifier.flatMap { $0(cid) as String? }
+    let display = displays.first { identifier($0) == wanted } ?? displays.first!
+
+    // "Spaces" is ordered left to right, and each entry is keyed by id64.
+    func spaceID(_ d: [String: Any]) -> UInt64? {
+        (d["id64"] as? NSNumber)?.uint64Value
+    }
+    guard let spaces = display["Spaces"] as? [[String: Any]],
+          let current = display["Current Space"] as? [String: Any],
+          let currentID = spaceID(current)
+    else { return pos }
+
+    let ids = spaces.compactMap(spaceID).filter { $0 != 0 }
+    guard let idx = ids.firstIndex(of: currentID) else { return pos }
+    pos.index = idx
+    pos.count = ids.count
+    return pos
+}
+
+var spacePosition = SpacePosition()
 
 // MARK: - options
 
@@ -39,6 +118,8 @@ struct Options {
     var velocity: Double = 999_999   // what we claim your fingers were doing
     var minVelocity: Double = 0.08   // below this, leave the gesture alone
     var vertical = false             // also flick vertical (Mission Control) swipes
+    var edgeGuard = true             // don't flick off the end of the space list
+    var invert = false               // escape hatch if the direction mapping is wrong
     var verbose = false
 }
 
@@ -53,6 +134,8 @@ func parseArgs() -> Options {
         case "--velocity":      o.velocity = Double(args.removeFirst()) ?? o.velocity
         case "--min-velocity":  o.minVelocity = Double(args.removeFirst()) ?? o.minVelocity
         case "--vertical":      o.vertical = true
+        case "--no-edge-guard":  o.edgeGuard = false
+        case "--invert":        o.invert = true
         case "-v", "--verbose": o.verbose = true
         case "-h", "--help":
             print("""
@@ -66,6 +149,8 @@ func parseArgs() -> Options {
               --min-velocity V    don't touch releases slower than V (default 0.08),
                                   so a slow peek-and-let-go still snaps back natively
               --vertical          also flick vertical swipes (Mission Control)
+              --no-edge-guard     allow flicking past the first/last space
+              --invert            flip the swipe-direction mapping
               -v, --verbose       log every swipe it rewrites
             """)
             exit(0)
@@ -110,9 +195,15 @@ let callback: CGEventTapCallBack = { _, type, event, _ in
     }
 
     let motion = event.getIntegerValueField(fSwipeMotion)
-    guard motion == motionHorizontal || (opts.vertical && motion != motionHorizontal),
-          event.getIntegerValueField(fPhase) == phaseEnded
+    let phase = event.getIntegerValueField(fPhase)
+    guard motion == motionHorizontal || (opts.vertical && motion != motionHorizontal)
     else { return Unmanaged.passUnretained(event) }
+
+    if phase == phaseBegan {
+        spacePosition = opts.edgeGuard ? currentSpacePosition() : SpacePosition()
+        return Unmanaged.passUnretained(event)
+    }
+    guard phase == phaseEnded else { return Unmanaged.passUnretained(event) }
 
     // Only amplify a release that already had a direction. A near-zero release
     // is you peeking at the next space and letting go: the Dock decides that one
@@ -128,10 +219,31 @@ let callback: CGEventTapCallBack = { _, type, event, _ in
         return Unmanaged.passUnretained(event)
     }
 
+    // Positive velocity means the Dock moves right, to the higher index. The
+    // trackpad's scroll-direction preference is applied upstream of us, so the
+    // sign already encodes where you are going, not which way your fingers went.
+    var goesNext = v > 0
+    if opts.invert { goesNext.toggle() }
+
+    if motion == motionHorizontal, opts.edgeGuard,
+       goesNext ? !spacePosition.canGoNext : !spacePosition.canGoPrev {
+        if opts.verbose {
+            print(String(format: "edge  %@ %.3f — space %d/%d, no %@ space, left native",
+                         goesNext ? "next" : "prev", v,
+                         spacePosition.index + 1, spacePosition.count,
+                         goesNext ? "next" : "previous"))
+            fflush(stdout)
+        }
+        return Unmanaged.passUnretained(event)
+    }
+
     let flung = v < 0 ? -opts.velocity : opts.velocity
     event.setDoubleValueField(axis, value: flung)
     if opts.verbose {
-        print(String(format: "flick %@ %.3f -> %.0f", motion == motionHorizontal ? "x" : "y", v, flung))
+        print(String(format: "flick %@ %.3f -> %.0f  (%@, space %d/%d)",
+                     motion == motionHorizontal ? "x" : "y", v, flung,
+                     goesNext ? "next" : "prev",
+                     spacePosition.index + 1, spacePosition.count))
         fflush(stdout)
     }
     return Unmanaged.passUnretained(event)
@@ -173,7 +285,10 @@ CGEvent.tapEnable(tap: tap, enable: true)
 if opts.probe {
     print("spaceflick probe — swipe now, ^C to stop")
 } else if opts.verbose {
-    print("spaceflick running — velocity \(opts.velocity), min \(opts.minVelocity)")
+    print("""
+    spaceflick running — velocity \(opts.velocity), min \(opts.minVelocity), \
+    edge guard \(opts.edgeGuard ? "on" : "off")
+    """)
 }
 fflush(stdout)
 CFRunLoopRun()
