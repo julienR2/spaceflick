@@ -34,8 +34,12 @@ brew services start spaceflick
 ```
 
 Then add `/opt/homebrew/opt/spaceflick/bin/spaceflick` to System Settings →
-Privacy & Security → **Accessibility** (an event tap can't see the trackpad
-without it) and `brew services restart spaceflick`.
+Privacy & Security → **Accessibility** — an event tap can't see the trackpad
+without it. No restart needed: spaceflick waits for the grant and starts
+working the moment you flip the switch.
+
+It runs as a launchd agent, so it comes back at login and after a reboot. Stop
+it with `brew services stop spaceflick`.
 
 <details>
 <summary>From source instead, with a proper <code>/Applications</code> app</summary>

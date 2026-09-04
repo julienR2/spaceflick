@@ -251,44 +251,70 @@ let callback: CGEventTapCallBack = { _, type, event, _ in
 
 var tapRef: CFMachPort?
 
-guard AXIsProcessTrusted() else {
-    FileHandle.standardError.write("""
+func log(_ line: String) {
+    print(line)
+    fflush(stdout)
+}
+
+/// .cgSessionEventTap + headInsert puts us upstream of the Dock, which is the
+/// process that owns the space animation.
+func installTap() -> Bool {
+    guard let tap = CGEvent.tapCreate(
+        tap: .cgSessionEventTap,
+        place: .headInsertEventTap,
+        options: .defaultTap,             // must be a default tap: we mutate the event
+        eventsOfInterest: CGEventMask(1) << CGEventMask(dockControlEventType),
+        callback: callback,
+        userInfo: nil
+    ) else { return false }
+
+    tapRef = tap
+    let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
+    CGEvent.tapEnable(tap: tap, enable: true)
+
+    if opts.probe {
+        log("spaceflick probe — swipe now, ^C to stop")
+    } else if opts.verbose {
+        log("""
+        spaceflick running — velocity \(opts.velocity), min \(opts.minVelocity), \
+        edge guard \(opts.edgeGuard ? "on" : "off")
+        """)
+    }
+    return true
+}
+
+func fail(_ message: String) -> Never {
+    FileHandle.standardError.write("spaceflick: \(message)\n".data(using: .utf8)!)
+    exit(1)
+}
+
+if AXIsProcessTrusted() {
+    guard installTap() else { fail("could not create the event tap") }
+} else {
+    // Do NOT exit here. Under launchd (brew services, or the login agent) the
+    // job is KeepAlive, so exiting would just respawn us every 10 seconds
+    // forever. Instead wait for the grant, which also means granting it takes
+    // effect immediately rather than needing a restart.
+    log("""
     spaceflick needs Accessibility access to see the trackpad's swipe events.
-    Grant it in System Settings → Privacy & Security → Accessibility, then run again.
-
-    """.data(using: .utf8)!)
-    // Ask once, so the entry appears in the list.
-    let opt = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
-    _ = AXIsProcessTrustedWithOptions([opt: true] as CFDictionary)
-    exit(1)
-}
-
-// .cgSessionEventTap + headInsert puts us upstream of the Dock, which is the
-// process that owns the space animation.
-guard let tap = CGEvent.tapCreate(
-    tap: .cgSessionEventTap,
-    place: .headInsertEventTap,
-    options: .defaultTap,                 // must be a default tap: we mutate the event
-    eventsOfInterest: CGEventMask(1) << CGEventMask(dockControlEventType),
-    callback: callback,
-    userInfo: nil
-) else {
-    FileHandle.standardError.write("spaceflick: could not create the event tap\n".data(using: .utf8)!)
-    exit(1)
-}
-tapRef = tap
-
-let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
-CGEvent.tapEnable(tap: tap, enable: true)
-
-if opts.probe {
-    print("spaceflick probe — swipe now, ^C to stop")
-} else if opts.verbose {
-    print("""
-    spaceflick running — velocity \(opts.velocity), min \(opts.minVelocity), \
-    edge guard \(opts.edgeGuard ? "on" : "off")
+    Add it in System Settings → Privacy & Security → Accessibility.
+    Waiting for that — no need to restart me once you have.
     """)
+    // Ask once, so the entry shows up in the list ready to be switched on.
+    let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+    _ = AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
+
+    // The only polling in the program, and it stops the moment we are trusted.
+    let timer = CFRunLoopTimerCreateWithHandler(
+        kCFAllocatorDefault, CFAbsoluteTimeGetCurrent() + 2, 2, 0, 0
+    ) { timer in
+        guard AXIsProcessTrusted() else { return }
+        CFRunLoopTimerInvalidate(timer)
+        log("Accessibility granted.")
+        guard installTap() else { fail("could not create the event tap") }
+    }
+    CFRunLoopAddTimer(CFRunLoopGetCurrent(), timer, .commonModes)
 }
-fflush(stdout)
+
 CFRunLoopRun()
