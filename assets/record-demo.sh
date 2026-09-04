@@ -1,20 +1,30 @@
 #!/bin/bash
-# Records the README's before/after GIF.
+# Records the demo clips: one take with spaceflick off, one with it on.
 #
-# Two takes of you swiping between the same two spaces — one with spaceflick
-# off, one with it on — trimmed to the same length and stacked side by side.
-# You supply the fingers; everything else is automatic.
+# You supply the fingers; everything else is automatic. Each take is written
+# twice — a retina-resolution MP4 for the website and a smaller GIF for the
+# README. No labels are burned in; those belong in the page, not the pixels.
 #
-#   ./assets/record-demo.sh [seconds]     default 5
+#   ./assets/record-demo.sh [seconds] [both|before|after]
+#
+# Outputs, into assets/:
+#   demo-before.mp4  demo-before.gif      spaceflick off
+#   demo-after.mp4   demo-after.gif       spaceflick on
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SECS="${1:-5}"
+WHICH="${2:-both}"
+MP4_WIDTH=1440        # ~2x a 720px slot: retina on the site, still sane to host
+GIF_WIDTH=640
+GIF_FPS=12
 TMP="$(mktemp -d)"
 
-# If spaceflick is running as a brew service, launchd will restart it the
-# moment we kill it, which would silently ruin the "off" take. Stop the
-# service for the duration and put it back afterwards.
+command -v ffmpeg >/dev/null || { echo "needs ffmpeg: brew install ffmpeg"; exit 1; }
+[[ -x build/spaceflick ]] || ./build.sh
+
+# If spaceflick is running as a brew service, launchd restarts it the moment we
+# kill it, which would silently ruin the "off" take. Park it for the duration.
 SERVICE_WAS_UP=false
 if brew services list 2>/dev/null | grep -qE "^spaceflick +started"; then
   SERVICE_WAS_UP=true
@@ -24,7 +34,7 @@ cleanup() {
   rm -rf "$TMP"
   pkill -f "spaceflick run" 2>/dev/null || true
   if [[ "$SERVICE_WAS_UP" == true ]]; then
-    echo "• restarting the brew service"
+    echo "• restarting the spaceflick brew service"
     brew services start spaceflick >/dev/null 2>&1 || true
   fi
 }
@@ -35,66 +45,56 @@ if [[ "$SERVICE_WAS_UP" == true ]]; then
   brew services stop spaceflick >/dev/null 2>&1 || true
 fi
 
-command -v ffmpeg >/dev/null || { echo "needs ffmpeg: brew install ffmpeg"; exit 1; }
-command -v magick >/dev/null || { echo "needs imagemagick: brew install imagemagick"; exit 1; }
-[[ -x build/spaceflick ]] || ./build.sh
-
-countdown() {
+capture() { # $1 = raw output path, $2 = prompt
   echo ""
-  echo "  $1"
+  echo "  $2"
   for i in 3 2 1; do printf "\r  starting in %d… " "$i"; sleep 1; done
-  printf "\r  RECORDING — swipe now! (%ss)      \n" "$SECS"
-}
-
-take() { # $1 = output, $2 = prompt
-  countdown "$2"
+  printf "\r  RECORDING — swipe now! (%ss)          \n" "$SECS"
   screencapture -v -V "$SECS" -x "$1" 2>/dev/null || {
-    echo "screencapture failed — grant Screen Recording to this terminal in"
+    echo ""
+    echo "screencapture failed. Grant Screen Recording to this terminal in"
     echo "System Settings → Privacy & Security → Screen Recording, then rerun."
     exit 1
   }
-  echo "  ✓ captured"
+  echo "  ✓ captured $(ffprobe -v error -show_entries stream=width,height \
+        -of csv=p=0:s=x "$1" | head -1)"
 }
 
-pkill -f "spaceflick run" 2>/dev/null || true
-sleep 1
-take "$TMP/before.mov" "TAKE 1 of 2 — spaceflick OFF. Swipe 4 fingers left, then right."
+encode() { # $1 = raw .mov, $2 = basename without extension
+  local raw="$1" out="assets/$2"
 
-./build/spaceflick run >/dev/null 2>&1 &
-sleep 1
-take "$TMP/after.mov" "TAKE 2 of 2 — spaceflick ON. Same two swipes, same rhythm."
-pkill -f "spaceflick run" 2>/dev/null || true
+  # Retina MP4 for the site. Even dimensions, yuv420p, streamable.
+  ffmpeg -y -v error -i "$raw" \
+    -vf "scale=${MP4_WIDTH}:-2:flags=lanczos" \
+    -c:v libx264 -preset slow -crf 21 -pix_fmt yuv420p \
+    -movflags +faststart -an "$out.mp4"
+
+  # GIF for the README, palette-optimised.
+  ffmpeg -y -v error -i "$raw" \
+    -filter_complex "fps=${GIF_FPS},scale=${GIF_WIDTH}:-2:flags=lanczos,setsar=1,\
+split[s0][s1];[s0]palettegen=max_colors=160:stats_mode=diff[p];\
+[s1][p]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle" \
+    -loop 0 "$out.gif"
+
+  echo "  → $out.mp4 ($(du -h "$out.mp4" | cut -f1))  $out.gif ($(du -h "$out.gif" | cut -f1))"
+}
+
+if [[ "$WHICH" == both || "$WHICH" == before ]]; then
+  pkill -f "spaceflick run" 2>/dev/null || true
+  sleep 1
+  capture "$TMP/before.mov" "spaceflick OFF — swipe 4 fingers left, then right."
+  echo "• encoding"
+  encode "$TMP/before.mov" demo-before
+fi
+
+if [[ "$WHICH" == both || "$WHICH" == after ]]; then
+  ./build/spaceflick run >/dev/null 2>&1 &
+  sleep 1
+  capture "$TMP/after.mov" "spaceflick ON — same two swipes, same rhythm."
+  pkill -f "spaceflick run" 2>/dev/null || true
+  echo "• encoding"
+  encode "$TMP/after.mov" demo-after
+fi
 
 echo ""
-echo "• building GIF"
-
-# Label strip. ffmpeg here has no drawtext, so the text is an image.
-# Font by path: Homebrew's ImageMagick ships with no font config on macOS.
-W=620; STRIP_H=56
-FONT=/System/Library/Fonts/Supplemental/Arial\ Bold.ttf
-[[ -f "$FONT" ]] || FONT=/System/Library/Fonts/HelveticaNeue.ttc
-magick -size "${W}x${STRIP_H}" xc:'#12121a' \
-        -font "$FONT" -pointsize 26 -fill '#8b8b9e' \
-        -gravity center -annotate 0 'without spaceflick' "$TMP/l-before.png"
-magick -size "${W}x${STRIP_H}" xc:'#12121a' \
-        -font "$FONT" -pointsize 26 -fill '#a99bff' \
-        -gravity center -annotate 0 'with spaceflick' "$TMP/l-after.png"
-magick "$TMP/l-before.png" "$TMP/l-after.png" +append "$TMP/labels.png"
-
-# Trim both takes to the shorter one so the halves stay in step.
-dur() { ffprobe -v error -show_entries format=duration -of csv=p=0 "$1"; }
-D=$(python3 -c "print(min($(dur "$TMP/before.mov"), $(dur "$TMP/after.mov")))")
-
-ffmpeg -y -v error \
-  -t "$D" -i "$TMP/before.mov" -t "$D" -i "$TMP/after.mov" -i "$TMP/labels.png" \
-  -filter_complex "\
-    [0:v]fps=14,scale=${W}:-2:flags=lanczos,setsar=1[a]; \
-    [1:v]fps=14,scale=${W}:-2:flags=lanczos,setsar=1[b]; \
-    [a][b]hstack=inputs=2[row]; \
-    [2:v][row]vstack=inputs=2[stacked]; \
-    [stacked]split[s0][s1]; \
-    [s0]palettegen=max_colors=128:stats_mode=diff[p]; \
-    [s1][p]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle" \
-  -loop 0 assets/demo.gif
-
-echo "done → assets/demo.gif  ($(du -h assets/demo.gif | cut -f1))"
+echo "done."
