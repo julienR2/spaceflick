@@ -236,33 +236,48 @@
       <thead>
         <tr>
           <th></th>
-          <th>Stock macOS</th>
-          <th>Synthetic-gesture tools</th>
+          <th>Stock</th>
+          <th>BTT</th>
           <th>yabai</th>
+          <th>AeroSpace</th>
+          <th>Blink</th>
           <th class="mine">spaceflick</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>Instant switch</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
-        <tr><td>Half-swipe peek</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="mine y">✓</td></tr>
-        <tr><td>Keeps your 4-finger swipe</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="mine y">✓</td></tr>
-        <tr><td>Native macOS spaces</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
-        <tr><td>No SIP changes</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="mine y">✓</td></tr>
-        <tr><td>Free &amp; open source</td><td>—</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
+        <tr><td>Near-instant switch</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
+        <tr><td><b>Half-swipe peek preserved</b></td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="mine y">✓</td></tr>
+        <tr><td><b>Keeps the native 4-finger swipe</b></td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="mine y">✓</td></tr>
+        <tr><td>Native macOS spaces</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="mine y">✓</td></tr>
+        <tr><td>No SIP changes</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
+        <tr><td>Free &amp; open source</td><td>—</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
+        <tr><td>Hotkeys, jump to space N</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine n">✕</td></tr>
+        <tr><td>Works inside Mission Control</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="y">✓</td><td class="mine n">✕</td></tr>
       </tbody>
     </table>
   </div>
   <p class="note" style="margin-top:18px">
-    “Synthetic-gesture tools” covers
-    <a href="https://github.com/benkoppe/Blink">Blink</a> and
-    <a href="https://github.com/jurplel/InstantSpaceSwitcher">InstantSpaceSwitcher</a>,
-    which swallow the horizontal swipe and post their own. They do more than
-    spaceflick does — hotkeys, menu bar, jump-to-space-N, wrap-around — so if you
-    want those, use them.
-    <a href="https://folivora.ai/">BetterTouchTool</a> (paid) originated the
-    technique and can do far more besides.
-    <a href="https://github.com/koekeishiya/yabai">yabai</a> is a tiling window
-    manager whose instant space switching needs SIP partially disabled.
+    The two bold rows are the whole reason spaceflick exists. Everything else
+    buys its speed by <em>replacing</em> the gesture, which makes the
+    interactive peek impossible — there's no finger left to track. The bottom
+    two rows are what spaceflick gives up in exchange: no hotkeys, no
+    jump-to-space-N, nothing inside Mission Control.
+    <a href="https://github.com/benkoppe/Blink">Blink</a> has all of that and is
+    a far more complete app; if you want it, go get it.
+  </p>
+  <p class="note">
+    I've tested only spaceflick and Blink myself. The
+    <a href="https://folivora.ai/">BetterTouchTool</a> (paid, and vastly more
+    general than this one job), <a href="https://github.com/koekeishiya/yabai">yabai</a>
+    and <a href="https://github.com/nikitabobko/AeroSpace">AeroSpace</a> columns
+    come from their own documentation plus
+    <a href="https://blink.thekoppe.com/">Blink's published comparison</a>, on
+    the same criteria it used. yabai reaches instant switching only with SIP
+    partially disabled and its scripting addition loaded. AeroSpace doesn't
+    switch native spaces at all — it “employs its own emulation of virtual
+    workspaces instead of relying on native macOS Spaces due to their
+    considerable limitations”, so the gesture rows aren't a fair fight: it's
+    solving a different problem, and solving it well.
   </p>
 </section>
 

@@ -64,18 +64,45 @@ Uninstall with `./build.sh uninstall`. To try it without installing anything:
 
 ## Best of both worlds
 
-|  | native | Blink & co. | spaceflick |
-|---|:---:|:---:|:---:|
-| Half-swipe to peek at two spaces | ✅ | ❌ | ✅ |
-| Near-instant switch on a fast swipe | ❌ | ✅ | ✅ |
-| Slow release still snaps back | ✅ | — | ✅ |
-| Rubber-bands at the first/last space | ✅ | ✅ | ✅ |
-| Leaves SIP alone | ✅ | ✅ | ✅ |
+|  | Stock | BTT | yabai | AeroSpace | Blink | **spaceflick** |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Near-instant switch | ✕ | ✓ | ✓ | ✓ | ✓ | **✓** |
+| **Half-swipe peek preserved** | ✓ | ✕ | ✕ | ✕ | ✕ | **✓** |
+| **Keeps the native 4-finger swipe** | ✓ | ✕ | ✕ | ✕ | ✕ | **✓** |
+| Native macOS spaces | ✓ | ✓ | ✓ | ✕ | ✓ | **✓** |
+| No SIP changes | ✓ | ✓ | ✕ | ✓ | ✓ | **✓** |
+| Free & open source | — | ✕ | ✓ | ✓ | ✓ | **✓** |
+| Hotkeys, jump to space N | ✓ | ✓ | ✓ | ✓ | ✓ | **✕** |
+| Works inside Mission Control | ✓ | ✕ | ✕ | ✕ | ✓ | **✕** |
 
-Tools like [Blink](https://github.com/benkoppe/Blink) get the speed by
-*replacing* the gesture — swallowing your swipe and posting a synthetic one — so
-the interactive peek can't exist. spaceflick adjusts your real gesture instead,
-which is why both columns can be ✅.
+The two bold rows are the whole reason spaceflick exists. Everything else gets
+its speed by *replacing* the gesture — swallowing your swipe and posting a
+synthetic one at absurd velocity — which makes the interactive peek impossible,
+because there's no finger left to track. spaceflick adjusts your real gesture,
+so both rows can be ✓.
+
+The bottom two rows are what it gives up in exchange: no hotkeys, no
+jump-to-space-N, nothing inside Mission Control.
+[Blink](https://github.com/benkoppe/Blink) has all of that and is a far more
+complete app — if you want those, use it.
+
+<details>
+<summary>Where these values come from</summary>
+
+I've tested only spaceflick and Blink myself. The
+[BetterTouchTool](https://folivora.ai/) (paid, and vastly more general than
+this one job), [yabai](https://github.com/koekeishiya/yabai) and
+[AeroSpace](https://github.com/nikitabobko/AeroSpace) columns come from their
+own documentation plus [Blink's published comparison](https://blink.thekoppe.com/),
+on the same criteria it used.
+
+Two notes worth spelling out. yabai reaches instant switching only with SIP
+partially disabled and its scripting addition loaded — that's the row below it.
+And AeroSpace doesn't switch native spaces at all: it "employs its own emulation
+of virtual workspaces instead of relying on native macOS Spaces due to their
+considerable limitations", so the gesture rows aren't really a fair fight — it's
+solving a different problem, and solving it well.
+</details>
 
 ## You are not imagining it
 
