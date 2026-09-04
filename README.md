@@ -11,6 +11,8 @@
 [![~180 lines of Swift](https://img.shields.io/badge/~180%20lines-Swift-f05138?logo=swift&logoColor=white)](mac/main.swift)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+**[julienr2.github.io/spaceflick](https://julienr2.github.io/spaceflick/)**
+
 </div>
 
 The four-finger space swipe is two things at once. While your fingers are down,
@@ -151,15 +153,35 @@ where you are going rather than which way your fingers moved.
 | `SLSSetSpaceTransitionDuration` & friends | Don't exist. No `*SpaceTransition*` symbol is exported from SkyLight on macOS 26. |
 | `CGSManagedDisplaySetCurrentSpace` | Exists, switches with no animation, but leaves Dock/WindowServer bookkeeping inconsistent — why yabai needs SIP disabled. |
 
-### Credits
-
-The velocity trick was reverse-engineered from **BetterTouchTool** by
-[darwin-fast-workspace-switch](https://github.com/RGBCube/darwin-fast-workspace-switch),
-and appears in [InstantSpaceSwitcher](https://github.com/jurplel/InstantSpaceSwitcher)
-and [Blink](https://github.com/benkoppe/Blink). spaceflick's contribution is
-narrow: apply it to the real gesture instead of a synthetic one, so the peek
-survives.
 </details>
+
+## Thanks
+
+spaceflick is a small idea on top of other people's reverse engineering.
+
+- **[BetterTouchTool](https://folivora.ai/)** — where the velocity trick came
+  from in the first place. Andreas Hegenberg worked out that the Dock's swipe
+  events could be spoken to directly, years before anyone wrote it down.
+- **[darwin-fast-workspace-switch](https://github.com/RGBCube/darwin-fast-workspace-switch)**
+  — reverse engineered BetterTouchTool to recover the private `CGEventField`
+  numbers and published them.
+- **[InstantSpaceSwitcher](https://github.com/jurplel/InstantSpaceSwitcher)** —
+  the compact C implementation that made the technique easy to read, and
+  confirmed the field constants independently.
+- **[Blink](https://github.com/benkoppe/Blink)** — by far the biggest influence,
+  and the reason this exists. It's where I first saw the trick working, and
+  reading its source taught me the parts I'd have got wrong on my own: that the
+  velocity sign already encodes direction rather than finger motion, that the
+  ordered space list has to be read per display, and that an edge guard is not
+  optional. Blink does much more than spaceflick — hotkeys, a menu bar,
+  jump-to-space-N, wrap-around. If you want those, go get it.
+- **[yabai](https://github.com/koekeishiya/yabai)** and
+  **[CGSInternal](https://github.com/NUIKit/CGSInternal)** — the long-running
+  public record of what the private SkyLight and CoreGraphics space APIs
+  actually are.
+
+spaceflick's own contribution is narrow: apply the trick to the real gesture
+rather than a synthetic one, so the peek survives.
 
 ## License
 
