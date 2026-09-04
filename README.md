@@ -15,6 +15,15 @@
 
 </div>
 
+| Without spaceflick | With spaceflick |
+|:---:|:---:|
+| ![stock macOS](assets/demo-before.gif) | ![with spaceflick](assets/demo-after.gif) |
+| the ease-out you wait through | same swipe, same rhythm |
+
+> It's worse than it looks: your keystrokes keep going to the space you *left*
+> until the animation finishes, so the wait isn't just visual — it's dead input
+> time.
+
 The four-finger space swipe is two things at once. While your fingers are down,
 the desktops track them one-to-one — that's the half-swipe you hold to see two
 spaces side by side. Then you lift, and the Dock plays a long ease-out before

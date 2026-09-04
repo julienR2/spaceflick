@@ -16,7 +16,7 @@ cd "$(dirname "$0")/.."
 SECS="${1:-5}"
 WHICH="${2:-both}"
 MP4_WIDTH=1440        # ~2x a 720px slot: retina on the site, still sane to host
-GIF_WIDTH=640
+GIF_WIDTH=560
 GIF_FPS=12
 TMP="$(mktemp -d)"
 
@@ -72,7 +72,7 @@ encode() { # $1 = raw .mov, $2 = basename without extension
   # GIF for the README, palette-optimised.
   ffmpeg -y -v error -i "$raw" \
     -filter_complex "fps=${GIF_FPS},scale=${GIF_WIDTH}:-2:flags=lanczos,setsar=1,\
-split[s0][s1];[s0]palettegen=max_colors=160:stats_mode=diff[p];\
+split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=diff[p];\
 [s1][p]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle" \
     -loop 0 "$out.gif"
 

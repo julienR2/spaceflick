@@ -13,215 +13,285 @@
 <meta name="twitter:card" content="summary">
 <style>
   :root {
-    --bg: #ffffff;
-    --bg-soft: #f6f5fb;
-    --border: #e6e4ef;
-    --text: #16151d;
-    --muted: #6a6780;
+    --bg: #fdfdff;
+    --surface: #ffffff;
+    --surface-2: #f5f4fa;
+    --border: #e7e5f0;
+    --text: #14131b;
+    --muted: #6c6982;
     --accent: #5b3ce0;
     --accent-soft: #efecff;
-    --code-bg: #16151d;
-    --code-text: #f2f1f7;
+    --code-bg: #14131b;
+    --code-text: #f3f2f8;
     --yes: #16a34a;
-    --no: #cbc9d6;
+    --no: #c9c7d4;
+    --shadow: 0 1px 2px rgba(20,19,27,.05), 0 12px 32px -12px rgba(20,19,27,.14);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0e0d14;
-      --bg-soft: #16151f;
-      --border: #262433;
-      --text: #f1f0f6;
-      --muted: #a29fb5;
-      --accent: #a99bff;
-      --accent-soft: #1c1930;
-      --code-bg: #06060a;
-      --code-text: #f1f0f6;
+      --bg: #0c0b12;
+      --surface: #131220;
+      --surface-2: #191826;
+      --border: #262436;
+      --text: #f2f1f7;
+      --muted: #a6a3b8;
+      --accent: #ab9dff;
+      --accent-soft: #1d1a30;
+      --code-bg: #060609;
+      --code-text: #f2f1f7;
       --yes: #4ade80;
-      --no: #3a3748;
+      --no: #3c3950;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -16px rgba(0,0,0,.7);
     }
   }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 16px/1.65 ui-sans-serif, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    font: 16px/1.6 ui-sans-serif, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
-  section { padding: 68px 0; border-bottom: 1px solid var(--border); }
-  section:last-of-type { border-bottom: 0; }
-  h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 14px; }
-  h1 { font-size: clamp(34px, 6vw, 52px); font-weight: 700; }
-  h2 { font-size: clamp(24px, 4vw, 32px); font-weight: 650; }
-  h3 { font-size: 17px; font-weight: 650; }
-  p { margin: 0 0 16px; }
-  a { color: var(--accent); }
-  .lede { font-size: clamp(17px, 2.4vw, 20px); color: var(--muted); max-width: 56ch; }
-  .sub { color: var(--muted); }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 0 28px; }
+  h1, h2, h3 { line-height: 1.15; letter-spacing: -0.025em; margin: 0; }
+  p { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
 
-  /* hero */
-  header { padding: 80px 0 60px; text-align: center; }
-  header .lede { margin-left: auto; margin-right: auto; }
-  .appicon { width: 104px; height: 104px; border-radius: 23%; margin-bottom: 26px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 30px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 11px 20px; border-radius: 10px;
-    font-size: 15px; font-weight: 600; text-decoration: none;
-    border: 1px solid var(--border); color: var(--text); background: var(--bg-soft);
+  /* ─── nav ─────────────────────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid var(--border);
   }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn:hover { filter: brightness(1.06); }
+  nav .wrap { display: flex; align-items: center; gap: 11px; height: 58px; }
+  nav img { width: 28px; height: 28px; border-radius: 24%; }
+  nav .name { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+  nav .spacer { flex: 1; }
+  nav a.gh {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 9px; color: var(--muted);
+  }
+  nav a.gh:hover { background: var(--surface-2); color: var(--text); }
+  nav svg { width: 21px; height: 21px; fill: currentColor; display: block; }
 
-  /* copyable command */
+  /* ─── hero ────────────────────────────────────────────── */
+  header { padding: 96px 0 84px; text-align: center; }
+  header h1 { font-size: clamp(36px, 6.4vw, 60px); font-weight: 700; }
+  header h1 .em { color: var(--accent); }
+  header .lede {
+    margin: 22px auto 0; max-width: 46ch;
+    font-size: clamp(17px, 2.2vw, 19px); color: var(--muted);
+  }
+  .install-inline { max-width: 520px; margin: 34px auto 0; }
+  .subtle { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
+
+  /* ─── sections ────────────────────────────────────────── */
+  section { padding: 84px 0; border-top: 1px solid var(--border); }
+  .shead { text-align: center; margin-bottom: 44px; }
+  .shead h2 { font-size: clamp(26px, 3.8vw, 36px); font-weight: 680; }
+  .shead p { margin-top: 13px; color: var(--muted); font-size: 17px; }
+
+  /* ─── code block ──────────────────────────────────────── */
   .cmd {
     display: flex; align-items: center; gap: 12px;
     background: var(--code-bg); color: var(--code-text);
-    border-radius: 10px; padding: 13px 14px 13px 18px;
-    font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-    text-align: left; overflow-x: auto;
+    border-radius: 12px; padding: 14px 14px 14px 18px;
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-align: left; box-shadow: var(--shadow);
   }
-  .cmd code { white-space: nowrap; }
+  .cmd code { white-space: nowrap; overflow-x: auto; flex: 1; }
+  .cmd code::-webkit-scrollbar { height: 0; }
+  .cmd .dollar { color: #7d7a91; user-select: none; }
   .cmd button {
-    margin-left: auto; flex: none;
-    background: rgba(255,255,255,.12); color: inherit;
-    border: 0; border-radius: 7px; padding: 6px 11px;
-    font: 600 12px/1 inherit; cursor: pointer;
+    flex: none; background: rgba(255,255,255,.13); color: inherit;
+    border: 0; border-radius: 8px; padding: 7px 12px;
+    font: 600 12px/1 inherit; cursor: pointer; transition: background .15s;
   }
-  .cmd button:hover { background: rgba(255,255,255,.22); }
+  .cmd button:hover { background: rgba(255,255,255,.24); }
 
-  /* before / after */
-  .compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: center; text-align: center; }
-  .compare .card { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 14px; padding: 26px 18px; }
-  .compare .big { font-size: clamp(24px, 4.4vw, 34px); font-weight: 700; letter-spacing: -0.03em; display: block; }
-  .compare .big.slow { color: var(--muted); }
-  .compare .big.fast { color: var(--accent); }
-  .compare .arrow { color: var(--muted); font-size: 22px; }
-  @media (max-width: 560px) {
-    .compare { grid-template-columns: 1fr; }
-    .compare .arrow { transform: rotate(90deg); }
+  /* ─── before / after ──────────────────────────────────── */
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .ba figure { margin: 0; }
+  .ba figcaption { display: flex; align-items: baseline; gap: 9px; margin-bottom: 12px; }
+  .ba .tag { font-size: 14px; font-weight: 650; }
+  .ba .off .tag { color: var(--muted); }
+  .ba .on  .tag { color: var(--accent); }
+  .ba .time { font-size: 13px; color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .ba video {
+    display: block; width: 100%; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    box-shadow: var(--shadow);
   }
+  @media (max-width: 620px) { .ba { grid-template-columns: 1fr; gap: 30px; } }
+  .callout {
+    margin: 34px auto 0; max-width: 62ch;
+    padding: 16px 20px; border-radius: 12px;
+    background: var(--accent-soft); color: var(--text);
+    font-size: 15px; line-height: 1.6;
+  }
+  .callout b { color: var(--accent); }
 
-  /* features */
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 26px 32px; margin-top: 30px; }
-  .features p { margin: 0; color: var(--muted); font-size: 15px; }
+  /* ─── features ────────────────────────────────────────── */
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 18px; }
+  .feat {
+    padding: 22px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+  .feat h3 { font-size: 15.5px; font-weight: 650; margin-bottom: 7px; }
+  .feat p { font-size: 14.5px; color: var(--muted); line-height: 1.55; }
 
-  /* table */
-  .tablewrap { overflow-x: auto; margin-top: 26px; }
-  table { border-collapse: collapse; width: 100%; font-size: 15px; }
-  th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--border); }
-  th:first-child, td:first-child { text-align: left; }
-  thead th { font-size: 13px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  /* ─── table ───────────────────────────────────────────── */
+  .tablewrap {
+    overflow-x: auto; border: 1px solid var(--border);
+    border-radius: 14px; background: var(--surface);
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 620px; }
+  th, td { padding: 13px 12px; text-align: center; border-bottom: 1px solid var(--border); }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  th:first-child, td:first-child { text-align: left; padding-left: 20px; font-weight: 500; }
+  thead th {
+    font-size: 12px; font-weight: 650; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+  }
   .mine { background: var(--accent-soft); }
-  th.mine { color: var(--accent); }
+  thead th.mine { color: var(--accent); }
+  tr.key td:first-child { font-weight: 650; }
   .y { color: var(--yes); font-weight: 700; }
   .n { color: var(--no); font-weight: 700; }
+  .dash { color: var(--muted); }
 
-  ul.plain { padding-left: 20px; color: var(--muted); }
-  ul.plain li { margin-bottom: 9px; }
-  ul.plain b, ul.plain a { color: var(--text); }
-  ul.plain a { font-weight: 600; }
-
-  .note { font-size: 14px; color: var(--muted); }
-  blockquote {
-    margin: 22px 0 0; padding: 14px 18px;
-    background: var(--bg-soft); border-left: 3px solid var(--accent);
-    border-radius: 0 10px 10px 0; font-size: 15px; color: var(--muted);
-  }
-  footer { padding: 44px 0 60px; text-align: center; color: var(--muted); font-size: 14px; }
-  footer a { color: var(--muted); margin: 0 9px; }
-  .steps { counter-reset: s; list-style: none; padding: 0; }
-  .steps li { counter-increment: s; position: relative; padding-left: 38px; margin-bottom: 22px; }
+  /* ─── install steps ───────────────────────────────────── */
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 46px; margin-bottom: 30px; }
+  .steps li:last-child { margin-bottom: 0; }
   .steps li::before {
-    content: counter(s); position: absolute; left: 0; top: 1px;
-    width: 25px; height: 25px; border-radius: 50%;
-    background: var(--accent-soft); color: var(--accent);
-    font: 700 13px/25px ui-monospace, monospace; text-align: center;
+    content: counter(s); position: absolute; left: 0; top: -1px;
+    width: 29px; height: 29px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font: 700 13px/29px ui-monospace, monospace; text-align: center;
   }
+  .steps h3 { font-size: 16px; font-weight: 650; margin-bottom: 8px; }
+  .steps p { color: var(--muted); font-size: 15px; }
+  .steps code {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 5px; padding: 1.5px 6px;
+    font: 13px ui-monospace, Menlo, monospace; color: var(--text);
+  }
+
+  details { margin-top: 26px; font-size: 14px; color: var(--muted); }
+  summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+  details p { margin-top: 12px; line-height: 1.65; }
+
+  footer { padding: 52px 0 72px; text-align: center; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); }
+  footer .links a { color: var(--muted); margin: 0 10px; }
+  footer .links a:hover { color: var(--text); }
+  footer .fine { margin-top: 18px; font-size: 12.5px; max-width: 44ch; margin-left: auto; margin-right: auto; }
 </style>
 </head>
 <body>
 
+<nav>
+  <div class="wrap">
+    <img src="icon.png" alt="">
+    <span class="name">spaceflick</span>
+    <span class="spacer"></span>
+    <a class="gh" href="https://github.com/julienR2/spaceflick" aria-label="GitHub repository">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.05-.13-.36-.95.08-1.98 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.03.13 1.85.08 1.98.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    </a>
+  </div>
+</nav>
+
 <header class="wrap">
-  <img class="appicon" src="icon.png" alt="spaceflick icon">
-  <h1>Keep the half-swipe.<br>Lose the half-second.</h1>
+  <h1>Keep the half-swipe.<br><span class="em">Lose the half-second.</span></h1>
   <p class="lede">
     Every macOS space switch spends half a second playing an animation — a full
     second on ProMotion. Every fix so far takes your gesture away to do it.
-    spaceflick doesn't.
   </p>
-  <div class="cta">
-    <a class="btn primary" href="https://github.com/julienR2/spaceflick#install">Install</a>
-    <a class="btn" href="https://github.com/julienR2/spaceflick">GitHub</a>
+  <div class="install-inline">
+    <div class="cmd">
+      <span class="dollar">$</span>
+      <code id="c0">brew install julienR2/tap/spaceflick</code>
+      <button data-copy="c0">Copy</button>
+    </div>
+    <p class="subtle">Free and open source · MIT · ~180 lines of Swift · no SIP changes</p>
   </div>
 </header>
 
 <section class="wrap">
-  <div class="compare">
-    <div class="card">
-      <span class="big slow">0.5–1s</span>
-      <span class="sub">stock macOS, every switch</span>
-    </div>
-    <div class="arrow">→</div>
-    <div class="card">
-      <span class="big fast">Instant</span>
-      <span class="sub">with spaceflick</span>
-    </div>
+  <div class="shead">
+    <h2>Same swipe. Same rhythm.</h2>
+    <p>Two takes, recorded back to back, one gesture each way.</p>
   </div>
-  <blockquote>
-    Your keystrokes keep going to the space you <em>left</em> until the animation
-    finishes. That's why it feels like more than half a second — because for your
-    keyboard, it is.
-  </blockquote>
+  <div class="ba">
+    <figure class="off">
+      <figcaption><span class="tag">Without spaceflick</span><span class="time">stock macOS</span></figcaption>
+      <video src="demo-before.mp4" autoplay loop muted playsinline></video>
+    </figure>
+    <figure class="on">
+      <figcaption><span class="tag">With spaceflick</span><span class="time">same machine</span></figcaption>
+      <video src="demo-after.mp4" autoplay loop muted playsinline></video>
+    </figure>
+  </div>
+  <p class="callout">
+    <b>It's worse than it looks.</b> Your keystrokes keep going to the space you
+    <em>left</em> until the animation finishes — so the wait isn't just visual,
+    it's dead input time.
+  </p>
 </section>
 
 <section class="wrap">
-  <h2>The half-swipe is the point</h2>
-  <p class="sub">
+  <div class="shead">
+    <h2>The half-swipe is the point</h2>
+  </div>
+  <p style="color:var(--muted);max-width:62ch;margin:0 auto 16px">
     The four-finger swipe is two things at once. While your fingers are down, the
     desktops track them one-to-one — that's the half-swipe you hold to see two
     spaces side by side. Then you lift, and the Dock plays a long ease-out before
     anything is actually focused.
   </p>
-  <p class="sub">
-    Every other tool gets the speed by <em>replacing</em> the gesture: it swallows
-    your swipe and posts a synthetic one at absurd velocity. That works, and it
-    makes the interactive peek impossible — there is no finger to track any more.
+  <p style="color:var(--muted);max-width:62ch;margin:0 auto 16px">
+    Every other tool gets the speed by <em>replacing</em> the gesture: it
+    swallows your swipe and posts a synthetic one at absurd velocity. That
+    works, and it makes the interactive peek impossible — there's no finger left
+    to track.
   </p>
-  <p>
-    <b>spaceflick adjusts your real gesture instead.</b> One passthrough event tap
-    rewrites a single number as the swipe ends — the release velocity the Dock
-    reads to decide how fast to finish. Nothing is intercepted, suppressed, or
-    replayed. Swipe slowly and it behaves exactly as before.
+  <p style="max-width:62ch;margin:0 auto">
+    <b>spaceflick adjusts your real gesture instead.</b> One passthrough event
+    tap rewrites a single number as the swipe ends — the release velocity the
+    Dock reads to decide how fast to finish. Nothing is intercepted, suppressed,
+    or replayed. Swipe slowly and it behaves exactly as before.
   </p>
 </section>
 
 <section class="wrap">
-  <h2>Everything it does. Nothing it doesn't.</h2>
+  <div class="shead">
+    <h2>Everything it does. Nothing it doesn't.</h2>
+  </div>
   <div class="features">
-    <div>
+    <div class="feat">
       <h3>The gesture stays native</h3>
       <p>No suppression, no synthetic events. The finger-tracking phase never even sees the tap.</p>
     </div>
-    <div>
+    <div class="feat">
       <h3>Half-swipe peek intact</h3>
       <p>Hold mid-swipe to see two spaces at once, exactly as macOS always let you.</p>
     </div>
-    <div>
+    <div class="feat">
       <h3>Peek and let go still works</h3>
       <p>A slow release passes through untouched, so macOS still decides it from how far you dragged.</p>
     </div>
-    <div>
+    <div class="feat">
       <h3>Safe at both ends</h3>
       <p>It won't fling you past the first or last space. At an edge it rubber-bands, like always.</p>
     </div>
-    <div>
+    <div class="feat">
       <h3>~0% CPU</h3>
-      <p>Two field reads and one field write per swipe. No timers, no polling. 10ms of CPU across 19 swipes.</p>
+      <p>Two field reads and one field write per swipe. No timers, no polling — 10ms of CPU across 19 swipes.</p>
     </div>
-    <div>
+    <div class="feat">
       <h3>SIP untouched</h3>
       <p>No scripting addition, no kext, no disabling System Integrity Protection. Just Accessibility.</p>
     </div>
@@ -229,143 +299,110 @@
 </section>
 
 <section class="wrap">
-  <h2>The alternatives</h2>
-  <p class="sub">Every other fix trades something away.</p>
+  <div class="shead">
+    <h2>The alternatives</h2>
+    <p>Every other fix trades something away.</p>
+  </div>
   <div class="tablewrap">
     <table>
       <thead>
         <tr>
-          <th></th>
-          <th>Stock</th>
-          <th>BTT</th>
-          <th>yabai</th>
-          <th>AeroSpace</th>
-          <th>Blink</th>
+          <th></th><th>Stock</th><th>BTT</th><th>yabai</th><th>AeroSpace</th><th>Blink</th>
           <th class="mine">spaceflick</th>
         </tr>
       </thead>
       <tbody>
         <tr><td>Near-instant switch</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
-        <tr><td><b>Half-swipe peek preserved</b></td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="mine y">✓</td></tr>
-        <tr><td><b>Keeps the native 4-finger swipe</b></td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="mine y">✓</td></tr>
+        <tr class="key"><td>Half-swipe peek preserved</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="mine y">✓</td></tr>
+        <tr class="key"><td>Keeps the native 4-finger swipe</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="mine y">✓</td></tr>
         <tr><td>Native macOS spaces</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="mine y">✓</td></tr>
         <tr><td>No SIP changes</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
-        <tr><td>Free &amp; open source</td><td>—</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
+        <tr><td>Free &amp; open source</td><td class="dash">—</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine y">✓</td></tr>
         <tr><td>Hotkeys, jump to space N</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="mine n">✕</td></tr>
         <tr><td>Works inside Mission Control</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="y">✓</td><td class="mine n">✕</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note" style="margin-top:18px">
-    The two bold rows are the whole reason spaceflick exists. Everything else
-    buys its speed by <em>replacing</em> the gesture, which makes the
-    interactive peek impossible — there's no finger left to track. The bottom
-    two rows are what spaceflick gives up in exchange: no hotkeys, no
-    jump-to-space-N, nothing inside Mission Control.
-    <a href="https://github.com/benkoppe/Blink">Blink</a> has all of that and is
-    a far more complete app; if you want it, go get it.
+  <p style="color:var(--muted);font-size:14.5px;margin-top:22px;max-width:66ch">
+    The two bold rows are the whole reason spaceflick exists. The bottom two are
+    what it gives up in exchange: no hotkeys, no jump-to-space-N, nothing inside
+    Mission Control. <a href="https://github.com/benkoppe/Blink">Blink</a> has
+    all of that and is a far more complete app — if you want it, go get it.
   </p>
-  <p class="note">
-    I've tested only spaceflick and Blink myself. The
-    <a href="https://folivora.ai/">BetterTouchTool</a> (paid, and vastly more
-    general than this one job), <a href="https://github.com/koekeishiya/yabai">yabai</a>
-    and <a href="https://github.com/nikitabobko/AeroSpace">AeroSpace</a> columns
-    come from their own documentation plus
-    <a href="https://blink.thekoppe.com/">Blink's published comparison</a>, on
-    the same criteria it used. yabai reaches instant switching only with SIP
-    partially disabled and its scripting addition loaded. AeroSpace doesn't
-    switch native spaces at all — it “employs its own emulation of virtual
-    workspaces instead of relying on native macOS Spaces due to their
-    considerable limitations”, so the gesture rows aren't a fair fight: it's
-    solving a different problem, and solving it well.
-  </p>
+  <details>
+    <summary>Where these values come from</summary>
+    <p>
+      I've tested only spaceflick and Blink myself. The
+      <a href="https://folivora.ai/">BetterTouchTool</a> (paid, and vastly more
+      general than this one job),
+      <a href="https://github.com/koekeishiya/yabai">yabai</a> and
+      <a href="https://github.com/nikitabobko/AeroSpace">AeroSpace</a> columns
+      come from their own documentation plus
+      <a href="https://blink.thekoppe.com/">Blink's published comparison</a>, on
+      the same criteria it used. yabai reaches instant switching only with SIP
+      partially disabled and its scripting addition loaded. AeroSpace doesn't
+      switch native spaces at all — it “employs its own emulation of virtual
+      workspaces instead of relying on native macOS Spaces due to their
+      considerable limitations”, so the gesture rows aren't a fair fight: it's
+      solving a different problem, and solving it well.
+    </p>
+  </details>
 </section>
 
 <section class="wrap" id="install">
-  <h2>Install. Grant. Done.</h2>
+  <div class="shead">
+    <h2>Install. Grant. Done.</h2>
+  </div>
   <ol class="steps">
     <li>
-      <p style="margin-bottom:10px">Install and start it:</p>
-      <div class="cmd">
+      <h3>Install and start it</h3>
+      <div class="cmd" style="margin-top:11px">
+        <span class="dollar">$</span>
         <code id="c1">brew install julienR2/tap/spaceflick &amp;&amp; brew services start spaceflick</code>
         <button data-copy="c1">Copy</button>
       </div>
     </li>
     <li>
+      <h3>Grant Accessibility</h3>
       <p>
-        Add <code>/opt/homebrew/opt/spaceflick/bin/spaceflick</code> to
-        <b>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security → Accessibility</b>.
+        Add <code>/opt/homebrew/opt/spaceflick/bin/spaceflick</code> under
+        System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security → Accessibility.
         An event tap can't see the trackpad without it.
       </p>
     </li>
     <li>
+      <h3>Swipe</h3>
       <p>
-        Swipe. No restart needed — spaceflick waits for the grant and starts
-        working the moment you flip the switch. It comes back at login and after
-        a reboot.
+        No restart needed — spaceflick waits for the grant and starts working
+        the moment you flip the switch. It runs as a launchd agent, so it comes
+        back at login and after a reboot.
       </p>
     </li>
   </ol>
-  <p class="note">
-    Prefer to build it yourself, or want a proper <code>/Applications</code> app?
-    <a href="https://github.com/julienR2/spaceflick#install">Build from source.</a>
-    Free and open source under MIT — about 180 lines of Swift, no dependencies.
-  </p>
+  <details>
+    <summary>Build from source instead</summary>
+    <p>
+      <code>git clone https://github.com/julienR2/spaceflick &amp;&amp; cd spaceflick &amp;&amp; ./build.sh install</code>
+      — that one also gives you a proper <code>/Applications</code> app. Or just
+      <code>./build.sh &amp;&amp; ./build/spaceflick run -v</code> to try it
+      without installing anything. Both builds are unsigned, so an upgrade
+      invalidates the Accessibility grant: if swipes go back to feeling slow,
+      remove spaceflick from the Accessibility list and re-add it.
+    </p>
+  </details>
 </section>
 
-<section class="wrap">
-  <h2>Thanks</h2>
-  <p class="sub">
-    spaceflick is a small idea on top of other people's reverse engineering. It
-    exists because of these:
-  </p>
-  <ul class="plain">
-    <li>
-      <a href="https://folivora.ai/">BetterTouchTool</a> — where the velocity
-      trick came from in the first place. Andreas Hegenberg worked out that the
-      Dock's swipe events could be spoken to directly, years before anyone wrote
-      it down.
-    </li>
-    <li>
-      <a href="https://github.com/RGBCube/darwin-fast-workspace-switch">darwin-fast-workspace-switch</a>
-      — reverse engineered BetterTouchTool to recover the private
-      <code>CGEventField</code> numbers and published them.
-    </li>
-    <li>
-      <a href="https://github.com/jurplel/InstantSpaceSwitcher">InstantSpaceSwitcher</a>
-      — the compact C implementation that made the technique easy to read and
-      confirmed the constants independently.
-    </li>
-    <li>
-      <a href="https://github.com/benkoppe/Blink">Blink</a> — by far the biggest
-      influence, and the reason this exists. Ben Koppe's app is where I first saw
-      the trick working, and reading its source taught me the parts I'd have got
-      wrong on my own: that the velocity sign already encodes direction, that the
-      ordered space list has to be read per display, and that an edge guard is
-      not optional. This site's shape is borrowed from
-      <a href="https://blink.thekoppe.com/">its own</a>, gratefully. Blink does
-      much more than spaceflick — if you want hotkeys and jump-to-space, go get it.
-    </li>
-    <li>
-      <a href="https://github.com/koekeishiya/yabai">yabai</a> and
-      <a href="https://github.com/NUIKit/CGSInternal">CGSInternal</a> — the
-      long-running public record of what the private SkyLight and CoreGraphics
-      space APIs actually are.
-    </li>
-  </ul>
-  <p class="note">
-    spaceflick's own contribution is narrow: apply the trick to the real gesture
-    rather than a synthetic one, so the peek survives.
-  </p>
-</section>
-
-<footer class="wrap">
-  <p>
-    <a href="https://github.com/julienR2/spaceflick">GitHub</a>·<a href="https://github.com/julienR2/spaceflick/releases">Releases</a>·<a href="https://github.com/julienR2/spaceflick/blob/main/LICENSE">MIT License</a>
-  </p>
-  <p class="note" style="max-width:52ch;margin:14px auto 0">
-    Not affiliated with Apple. macOS is a trademark of Apple Inc.
-  </p>
+<footer>
+  <div class="wrap">
+    <p class="links">
+      <a href="https://github.com/julienR2/spaceflick">GitHub</a>·<a href="https://github.com/julienR2/spaceflick/releases">Releases</a>·<a href="https://github.com/julienR2/spaceflick#thanks">Thanks</a>·<a href="https://github.com/julienR2/spaceflick/blob/main/LICENSE">MIT</a>
+    </p>
+    <p class="fine">
+      Built on reverse engineering by BetterTouchTool, darwin-fast-workspace-switch,
+      InstantSpaceSwitcher and Blink.
+    </p>
+    <p class="fine">Not affiliated with Apple. macOS is a trademark of Apple Inc.</p>
+  </div>
 </footer>
 
 <script>
