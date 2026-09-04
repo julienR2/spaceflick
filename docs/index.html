@@ -343,9 +343,9 @@
         </div>
       </div>
       <p class="hint">
-        <b>Two-finger swipe sideways</b> on either screen — or drag it. Swipe
-        <b>slowly</b> and both behave the same. <b>Flick</b> and only the right
-        one lands immediately.
+        <b>Grab either screen and drag it sideways.</b> Let go
+        <b>slowly</b> and both behave the same. <b>Flick</b> it and only the
+        right one lands immediately.
       </p>
     </div>
   </div>
@@ -516,26 +516,23 @@
   });
 
   /* ── the demo ─────────────────────────────────────────────
-     Both panes track your fingers 1:1 — that is the half-swipe.
+     Both panes track your pointer 1:1 — that is the half-swipe.
      They differ only in what happens when you let go:
        stock  → always the long ease-out, and the window is not
                 focused until it finishes
        flick  → a fast release snaps; a slow one behaves natively
 
-     The fiddly part is knowing when your fingers left the trackpad.
-     macOS keeps sending wheel events after you let go — the momentum
-     tail — with deltas decaying towards zero. Waiting for that train
-     to stop would measure a release velocity of ~0 every time, so we
-     watch for the decay starting, treat that as the lift, and use the
-     peak speed of the part you actually drove.
+     Drag and touch only, deliberately. A trackpad two-finger scroll
+     has no lift event: macOS keeps sending wheel events after your
+     fingers leave, decaying to zero, so the release velocity a page
+     can measure is not the one you actually gestured with. Guessing
+     where the tail starts was unreliable in practice, so scrolling
+     over a screen just says so rather than pretending.
   */
-  var STOCK_MS = 620,       // the ease-out you wait through
-      FLICK_MS = 70,        // what spaceflick turns it into
-      WHEEL_FLICK = 1.2,    // px/ms, peak, for trackpad swipes
-      DRAG_FLICK  = 0.55,   // px/ms, for a mouse or finger drag
-      EASE = 'cubic-bezier(.32,.72,0,1)',
-      END_IDLE = 110,       // wheel silence that means the gesture ended
-      TAIL_QUIET = 140;     // silence that means the momentum tail is done
+  var STOCK_MS = 620,      // the ease-out you wait through
+      FLICK_MS = 70,       // what spaceflick turns it into
+      FLICK_V  = 0.55,     // px/ms at release, above which it is a flick
+      EASE = 'cubic-bezier(.32,.72,0,1)';
 
   var NAMES = ['Editor', 'Terminal'];
 
@@ -546,11 +543,8 @@
         wins   = pane.querySelectorAll('.win'),
         status = pane.querySelector('.status'),
         index = 0, offset = 0, raw = 0, startOffset = 0,
-        gesturing = false,
-        samples = [],
-        peak = 0, maxAbs = 0, lastAbs = 0, decay = 0, lastT = 0, firstTick = true,
-        phase = 'idle',                       // idle | tracking | tail
-        idleTimer = null, quietTimer = null, settleTimer = null,
+        gesturing = false, samples = [],
+        settleTimer = null, nudgeTimer = null,
         pointerId = null, touchX = null;
 
     function width() { return screen.clientWidth || 1; }
@@ -563,16 +557,15 @@
       if (gesturing) return;
       gesturing = true;
       clearTimeout(settleTimer);
+      clearTimeout(nudgeTimer);
       track.style.transition = 'none';
       raw = offset; startOffset = offset;
-      samples = []; peak = 0; maxAbs = 0; lastAbs = 0; decay = 0; lastT = 0;
-      firstTick = true;
+      samples = [];
     }
 
-    // `raw` is where your fingers have actually taken it; `offset` is where we
-    // draw it. Past an end they diverge — that is the rubber-band. Damping the
-    // drawn value and then adding to *that* would compound, pinning the pane
-    // in place and reading a release velocity of zero.
+    /* `raw` is where your pointer has taken it; `offset` is where we draw it.
+       Past an end they diverge — that is the rubber-band. Damping the drawn
+       value and adding to *that* would compound and pin the pane in place. */
     function damp(pos) {
       var min = -(wins.length - 1) * width();
       if (pos > 0) return pos * 0.28;
@@ -582,19 +575,18 @@
 
     function move(dx) {
       begin();
-      var w = width();
       raw += dx;
       offset = damp(raw);
-      samples.push({ t: performance.now(), o: offset });
+      samples.push({ t: performance.now(), o: raw });
       if (samples.length > 14) samples.shift();
       paint();
       say('<span class="k">tracking… ' +
-          Math.round(Math.min(1, Math.abs(offset / w)) * 100) +
+          Math.round(Math.min(1, Math.abs(offset / width())) * 100) +
           '% — both spaces visible</span>');
     }
 
-    /* velocity over the last ~120ms, for drags (no momentum there) */
-    function dragSpeed() {
+    /* velocity over the last ~120ms — with a real lift event this is exact */
+    function releaseVelocity() {
       if (samples.length < 2) return 0;
       var last = samples[samples.length - 1], first = samples[0];
       for (var i = samples.length - 1; i >= 0; i--) {
@@ -605,13 +597,14 @@
       return dt > 0 ? (last.o - first.o) / dt : 0;
     }
 
-    function release(speed, dir, threshold, label) {
+    function release() {
       if (!gesturing) return;
       gesturing = false;
-      clearTimeout(idleTimer);
 
       var w = width(), from = index,
-          flicked = speed >= threshold && dir !== 0,
+          v = releaseVelocity(), speed = Math.abs(v),
+          dir = Math.sign(v) || Math.sign(raw - startOffset),
+          flicked = speed >= FLICK_V && dir !== 0,
           target = flicked ? from + (dir < 0 ? 1 : -1) : Math.round(-raw / w);
       target = Math.max(0, Math.min(wins.length - 1, target));
 
@@ -623,14 +616,14 @@
       raw = offset = -target * w;
       paint();
 
-      var v = label + ' ' + speed.toFixed(2) + ' px/ms';
+      var label = 'release ' + speed.toFixed(2) + ' px/ms';
       if (!moved) {
-        say('<span class="k">' + v + ' — not far enough, snapping back</span>');
+        say('<span class="k">' + label + ' — not far enough, snapping back</span>');
       } else if (instant) {
-        say('<span class="good">' + v + ' → instant (' + ms + 'ms)</span><br>' +
+        say('<span class="good">' + label + ' → instant (' + ms + 'ms)</span><br>' +
             '<span class="k">keys → ' + NAMES[target] + ' right away</span>');
       } else {
-        say('<span class="k">' + v + ' → ease-out (' + ms + 'ms)</span><br>' +
+        say('<span class="k">' + label + ' → ease-out (' + ms + 'ms)</span><br>' +
             '<span class="warn">keys still → ' + NAMES[from] + '…</span>');
       }
 
@@ -646,58 +639,17 @@
       }, moved ? ms : STOCK_MS);
     }
 
-    function armQuiet() {
-      clearTimeout(quietTimer);
-      quietTimer = setTimeout(function () { phase = 'idle'; }, TAIL_QUIET);
-    }
-
+    /* Sideways scrolling is deliberately not wired to the demo — say so
+       instead of appearing broken, and don't let the page lurch sideways. */
     screen.addEventListener('wheel', function (e) {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;   // let the page scroll
       e.preventDefault();
-
-      // Swallow the momentum tail so it can't start a second gesture.
-      if (phase === 'tail') { armQuiet(); return; }
-
-      var dx = e.deltaX * (e.deltaMode === 1 ? 16 : 1),
-          now = performance.now();
-      if (phase === 'idle') { phase = 'tracking'; begin(); lastT = now; }
-
-      // The first event of a gesture has no previous timestamp, so any dt we
-      // invent for it is fiction — and a fictional small dt reads as a flick.
-      // Start measuring from the second event.
-      var dt = Math.max(1, now - lastT); lastT = now;
-      if (!firstTick) {
-        var speed = Math.abs(dx) / dt;
-        if (speed > peak) peak = speed;
-      }
-      firstTick = false;
-
-      move(-dx);
-
-      var a = Math.abs(dx);
-      if (a > maxAbs) { maxAbs = a; decay = 0; }
-      else if (a < lastAbs) { decay++; } else { decay = 0; }
-      lastAbs = a;
-
-      // Deltas decaying well below the peak = your fingers are already off.
-      if (maxAbs > 6 && decay >= 3 && a < maxAbs * 0.5) {
-        release(peak, Math.sign(raw - startOffset), WHEEL_FLICK, 'peak');
-        phase = 'tail';
-        armQuiet();
-        return;
-      }
-
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(function () {
-        if (phase === 'tracking') release(peak, Math.sign(raw - startOffset), WHEEL_FLICK, 'peak');
-        phase = 'idle';
-      }, END_IDLE);
+      if (gesturing) return;
+      say('<span class="warn">drag it instead</span> ' +
+          '<span class="k">— a browser can\'t read trackpad release velocity</span>');
+      clearTimeout(nudgeTimer);
+      nudgeTimer = setTimeout(idle, 2200);
     }, { passive: false });
-
-    function endDrag() {
-      var v = dragSpeed();
-      release(Math.abs(v), Math.sign(v) || Math.sign(raw - startOffset), DRAG_FLICK, 'release');
-    }
 
     screen.addEventListener('pointerdown', function (e) {
       if (pointerId !== null || e.pointerType === 'touch') return;
@@ -713,7 +665,7 @@
       screen.addEventListener(t, function (e) {
         if (e.pointerId !== pointerId) return;
         pointerId = null;
-        endDrag();
+        release();
       });
     });
 
@@ -728,7 +680,7 @@
     }, { passive: false });
     screen.addEventListener('touchend', function () {
       if (touchX === null) return;
-      touchX = null; endDrag();
+      touchX = null; release();
     }, { passive: true });
 
     window.addEventListener('resize', function () {
