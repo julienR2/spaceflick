@@ -11,7 +11,29 @@ cd "$(dirname "$0")/.."
 
 SECS="${1:-5}"
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"; pkill -f "spaceflick run" 2>/dev/null || true' EXIT
+
+# If spaceflick is running as a brew service, launchd will restart it the
+# moment we kill it, which would silently ruin the "off" take. Stop the
+# service for the duration and put it back afterwards.
+SERVICE_WAS_UP=false
+if brew services list 2>/dev/null | grep -qE "^spaceflick +started"; then
+  SERVICE_WAS_UP=true
+fi
+
+cleanup() {
+  rm -rf "$TMP"
+  pkill -f "spaceflick run" 2>/dev/null || true
+  if [[ "$SERVICE_WAS_UP" == true ]]; then
+    echo "• restarting the brew service"
+    brew services start spaceflick >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
+if [[ "$SERVICE_WAS_UP" == true ]]; then
+  echo "• pausing the spaceflick brew service for the recording"
+  brew services stop spaceflick >/dev/null 2>&1 || true
+fi
 
 command -v ffmpeg >/dev/null || { echo "needs ffmpeg: brew install ffmpeg"; exit 1; }
 command -v magick >/dev/null || { echo "needs imagemagick: brew install imagemagick"; exit 1; }
