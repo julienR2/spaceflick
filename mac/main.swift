@@ -59,7 +59,7 @@ func parseArgs() -> Options {
             spaceflick — instant landing for the native macOS space swipe
 
               spaceflick run      rewrite the release velocity (the actual tool)
-              spaceflick probe     log raw DockSwipe events, change nothing
+              spaceflick probe    log raw DockSwipe events, change nothing
 
             Options
               --velocity N        claimed release velocity (default 999999)
